@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { isToday, format } from 'date-fns';
+import { isToday, format, parseISO } from 'date-fns';
 import ptBR from 'date-fns/locale/pt-BR';
 import { FiClock, FiPower } from 'react-icons/fi';
 import DayPicker, { DayModifiers } from 'react-day-picker';
@@ -31,6 +31,7 @@ interface MonthAvailabilityItem {
 interface Appointment {
   id: string;
   date: string;
+  hourFormatted: string;
   user: {
     name: string;
     avatar_url: string;
@@ -79,7 +80,7 @@ const Dashboard: React.FC = () => {
 
   useEffect(() => {
     async function loadAppointments() {
-      const response = await api.get(`/appointments/me`, {
+      const response = await api.get<Appointment[]>(`/appointments/me`, {
         params: {
           year: selectedDate.getFullYear(),
           month: selectedDate.getMonth() + 1,
@@ -87,7 +88,14 @@ const Dashboard: React.FC = () => {
         },
       });
 
-      setAppointments(response.data);
+      const appointmentsFormatted = response.data.map(appointment => {
+        return {
+          ...appointment,
+          hourFormatted: format(parseISO(appointment.date), 'HH:mm'),
+        };
+      });
+
+      setAppointments(appointmentsFormatted);
     }
 
     loadAppointments();
@@ -119,6 +127,18 @@ const Dashboard: React.FC = () => {
 
     return `${weekDay.substr(0, 1).toUpperCase()}${weekDay.substr(1)}`;
   }, [selectedDate]);
+
+  const morningAppointments = useMemo(() => {
+    return appointments.filter(appointment => {
+      return parseISO(appointment.date).getHours() < 12;
+    });
+  }, [appointments]);
+
+  const afternoonAppointments = useMemo(() => {
+    return appointments.filter(appointment => {
+      return parseISO(appointment.date).getHours() >= 12;
+    });
+  }, [appointments]);
 
   return (
     <Container>
@@ -169,57 +189,45 @@ const Dashboard: React.FC = () => {
           <Section>
             <strong>Manhã</strong>
 
-            <Appointment>
-              <span>
-                <FiClock />
-                08:00
-              </span>
+            {morningAppointments.map(appointment => (
+              <Appointment key={appointment.id}>
+                <span>
+                  <FiClock />
+                  {appointment.hourFormatted}
+                </span>
 
-              <div>
-                <img
-                  src="https://xesque.rocketseat.dev/users/avatar/profile-731a9502-130e-4dae-a31f-293e384a3232.jpg"
-                  alt="GoBarber"
-                />
+                <div>
+                  <img
+                    src={appointment.user.avatar_url}
+                    alt={appointment.user.name}
+                  />
 
-                <strong>Iago Ronan</strong>
-              </div>
-            </Appointment>
-
-            <Appointment>
-              <span>
-                <FiClock />
-                08:00
-              </span>
-
-              <div>
-                <img
-                  src="https://xesque.rocketseat.dev/users/avatar/profile-731a9502-130e-4dae-a31f-293e384a3232.jpg"
-                  alt="GoBarber"
-                />
-
-                <strong>Iago Ronan</strong>
-              </div>
-            </Appointment>
+                  <strong>{appointment.user.name}</strong>
+                </div>
+              </Appointment>
+            ))}
           </Section>
 
           <Section>
             <strong>Tarde</strong>
 
-            <Appointment>
-              <span>
-                <FiClock />
-                08:00
-              </span>
+            {afternoonAppointments.map(appointment => (
+              <Appointment key={appointment.id}>
+                <span>
+                  <FiClock />
+                  {appointment.hourFormatted}
+                </span>
 
-              <div>
-                <img
-                  src="https://xesque.rocketseat.dev/users/avatar/profile-731a9502-130e-4dae-a31f-293e384a3232.jpg"
-                  alt="GoBarber"
-                />
+                <div>
+                  <img
+                    src={appointment.user.avatar_url}
+                    alt={appointment.user.name}
+                  />
 
-                <strong>Iago Ronan</strong>
-              </div>
-            </Appointment>
+                  <strong>{appointment.user.name}</strong>
+                </div>
+              </Appointment>
+            ))}
           </Section>
         </Schedule>
 
