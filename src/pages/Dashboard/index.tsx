@@ -24,6 +24,8 @@ import {
 import logoImg from '../../assets/logo.svg';
 import api from '../../services/api';
 
+import avatar from '../../assets/avatar.png';
+
 interface MonthAvailabilityItem {
   day: number;
   available: boolean;
@@ -154,7 +156,7 @@ const Dashboard: React.FC = () => {
           <img src={logoImg} alt="GoBarber" />
 
           <Profile>
-            <img src={user.avatar_url} alt={user.name} />
+            <img src={user.avatar_url ?? avatar} alt={user.name} />
 
             <div>
               <span>Bem vindo,</span>
